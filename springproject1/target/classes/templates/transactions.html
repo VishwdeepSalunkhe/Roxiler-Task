@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaction Table</title>
+    <style>
+        body {
+    font-family: Arial, sans-serif;
+}
+
+.container {
+    width: 80%;
+    margin: 0 auto;
+    text-align: center;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+table, th, td {
+    border: 1px solid #ddd;
+    padding: 8px
+
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Transaction List</h1>
+
+    <label for="monthSelector">Select Month:</label>
+    <select id="monthSelector">
+        <option value="3" selected>March</option>
+        <option value="1">January</option>
+        <option value="2">February</option>
+
+        <option value="4">April</option>
+        <option value="5">May</option>
+        <option value="6">June</option>
+        <option value="7">July</option>
+        <option value="8">August</option>
+        <option value="9">September</option>
+        <option value="10">October</option>
+        <option value="11">November</option>
+        <option value="12">December</option>
+    </select>
+
+    <label for="searchInput">Search:</label>
+    <input type="text" id="searchInput" placeholder="Search transactions...">
+
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Title</th>
+            <th>Description</th>
+            <th>Price</th>
+            <th>Category</th>
+            <th>Sold</th>
+            <th>Image</th>
+        </tr>
+        </thead>
+        <tbody id="transactionTableBody">
+        <!-- Transaction rows will be inserted here -->
+        </tbody>
+    </table>
+
+    <div class="pagination">
+        <button id="prevPage" disabled>Previous</button>
+        <button id="nextPage">Next</button>
+    </div>
+</div>
+
+<div class="statistics">
+    <h2>Statistics for Selected Month</h2>
+    <div class="stat-box">
+        <p>Total Sale Amount: <span id="totalSaleAmount">0</span></p>
+        <p>Total Sold Items: <span id="totalSoldItems">0</span></p>
+        <p>Total Not Sold Items: <span id="totalNotSoldItems">0</span></p>
+    </div>
+</div>
+
+<script>
+
+
+
+
+    document.addEventListener("DOMContentLoaded", function () {
+   const monthSelector = document.getElementById("monthSelector");
+   const searchInput = document.getElementById("searchInput");
+   const transactionTableBody = document.getElementById("transactionTableBody");
+   const prevPageButton = document.getElementById("prevPage");
+   const nextPageButton = document.getElementById("nextPage");
+
+   let currentPage = 1;
+   const perPage = 10;
+
+   async function fetchTransactions(page = 1, search = "") {
+       const month = monthSelector.value;
+       const apiUrl = `/transactions/api?month=${month}&search=${search}&page=${page}&per_page=${perPage}`;
+
+       try {
+           const response = await fetch(apiUrl);
+           const data = await response.json();
+
+           renderTable(data.content);
+           prevPageButton.disabled = data.first;
+           nextPageButton.disabled = data.last;
+       } catch (error) {
+           console.error("Error fetching transactions:", error);
+       }
+   }
+
+   function renderTable(transactions) {
+       transactionTableBody.innerHTML = "";
+       transactions.forEach((transaction) => {
+           const row = document.createElement("tr");
+           row.innerHTML = `
+               <td>${transaction.id}</td>
+               <td>${transaction.title}</td>
+               <td>${transaction.description}</td>
+               <td>${transaction.price}</td>
+               <td>${transaction.category}</td>
+               <td>${transaction.sold}</td>
+               <td><img src="${transaction.image}" alt="Product Image" width="50"></td>
+           `;
+           transactionTableBody.appendChild(row);
+       });
+   }
+
+   monthSelector.addEventListener("change", () => fetchTransactions(1, searchInput.value));
+   searchInput.addEventListener("input", () => fetchTransactions(1, searchInput.value));
+
+   prevPageButton.addEventListener("click", () => {
+       if (currentPage > 1) {
+           currentPage--;
+           fetchTransactions(currentPage, searchInput.value);
+       }
+   });
+
+   nextPageButton.addEventListener("click", () => {
+       currentPage++;
+       fetchTransactions(currentPage, searchInput.value);
+   });
+
+   fetchTransactions();
+});
+
+    async function fetchStatistics() {
+    const month = monthSelector.value;
+    const apiUrl = `/transactions/api/statistics?month=${month}`;
+
+    try {
+        const response = await fetch(apiUrl);
+        const data = await response.json();
+
+        document.getElementById("totalSaleAmount").textContent = data.totalSaleAmount.toFixed(2);
+        document.getElementById("totalSoldItems").textContent = data.totalSoldItems;
+        document.getElementById("totalNotSoldItems").textContent = data.totalNotSoldItems;
+    } catch (error) {
+        console.error("Error fetching statistics:", error);
+    }
+}
+
+// Fetch statistics whenever month is changed
+monthSelector.addEventListener("change", () => {
+    fetchTransactions(1, searchInput.value);
+    fetchStatistics();
+});
+
+// Call fetchStatistics on page load
+fetchStatistics();
+
+
+</script>
+</body>
+</html>
